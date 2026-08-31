@@ -1,6 +1,6 @@
 # Bedtime stories for ages 5 to 10
 
-My submission for the Hippocratic AI coding assignment. The original brief is in [README.md](README.md).
+My submission for the Hippocratic AI coding assignment. The original brief is in [ASSIGNMENT.md](ASSIGNMENT.md).
 
 Short version: the model writes several versions of the story, some cheap string checks throw out the bad ones, and an LLM judge picks a winner by comparing the survivors against each other instead of scoring them. It is `gpt-3.5-turbo` the whole way through, at different temperatures depending on the job.
 
@@ -80,9 +80,12 @@ The dependency is pinned to `openai==0.28.1`, because `openai.ChatCompletion.cre
    |        v                                  |
    |   keep it, or bin it and write another    |
    |                                           |
-   |   if nothing survives all 5 attempts,     |
-   |   the one with the fewest complaints      |
-   |   gets read anyway                        |
+   |   if nothing survives all 5 attempts, the |
+   |   least bad draft is read instead, but    |
+   |   only if it failed on length or dialogue |
+   |   rather than on content. if every draft  |
+   |   had something upsetting in it, nothing  |
+   |   is read at all                          |
    +-------------------------------------------+
              |
              |  1 to 3 drafts
@@ -108,7 +111,8 @@ The dependency is pinned to `openai==0.28.1`, because `openai.ChatCompletion.cre
    "make it sillier" -> revise_story() [temp 0.6]
                         re-checked afterwards, one retry
                         if the revision broke something,
-                        then back to READ ALOUD
+                        and the original is kept if both
+                        tries fail, then back to READ ALOUD
 ```
 
 Somewhere between 9 and 14 model calls, and 25 to 35 seconds, for one story.
@@ -160,6 +164,14 @@ Nothing is refused outright. Zombies eating people becomes monsters having a pic
 ### Revision
 
 There is exactly one place a story gets revised, and that is when a person asks for a change. "Make it sillier and give Bob a funny voice" is specific enough that the model does the right thing with it. Criticism the model invents about its own work is not specific, and it does not, which is most of what the judge section above is about.
+
+A revision has to clear the same bar a fresh draft does, and it gets one retry. If neither attempt clears it, the listener keeps the story they already had. Not getting the change you asked for is a smaller failure than being handed something the checks rejected.
+
+### Failing closed
+
+The pipeline would rather read nothing than read something it has already judged unsafe. If all five drafts get thrown out, it falls back to the least bad one, but only from the drafts whose problems were cosmetic. Running short or keeping the characters too quiet makes for a dull story and a dull story is still worth reading. A draft rejected for illness or death is not eligible no matter how few other complaints it had, and if every draft has something like that in it the answer is that there is no story tonight and the child can ask for a different one.
+
+This was not the original behaviour. The first version picked whichever rejected draft had the fewest complaints, which meant a single "upsetting content: died" could beat two harmless notes about length, and a story with a death in it would be read to a five year old because it was technically the tidiest failure. Counting complaints is not the same as weighing them.
 
 ## The files
 
