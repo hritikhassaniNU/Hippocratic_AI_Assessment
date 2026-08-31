@@ -1,0 +1,4 @@
+# The skeleton's openai.ChatCompletion call was removed in openai 1.0, so the
+# 0.x client is pinned here and the skeleton's code still works unchanged.
+# Verified on Python 3.14.3. The model itself is untouched: gpt-3.5-turbo.
+openai==0.28.1
