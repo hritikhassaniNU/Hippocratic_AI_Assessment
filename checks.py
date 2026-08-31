@@ -30,6 +30,25 @@ MORALISING = ("learned that", "proving that", "the moral", "teaching us",
 HARM = ("fell ill", "got sick", "was sick", "tragedy", "died", "death",
         "passed away", "mock", "coward", "nightmare", "injured")
 
+# intake screens the request for these, but nothing screened the story until
+# now, and the two lists never overlapped. A request for a story about Bob the
+# cat passes intake, and then "give Bob a gun and send him to war" arrives
+# through the feedback loop, goes straight to revise_story, and came back
+# unexamined. Violence has to be caught on the way out as well as on the way
+# in, not least because the model can reach for it unprompted.
+#
+# This is not the whole intake list. "army" has ants in it and "dead" has
+# leaves, and a false match matters more here than it does at intake: five
+# false rejections in a row now means the child gets no story at all.
+VIOLENT = ("gun", "guns", "weapon", "weapons", "bomb", "bombs", "kill",
+           "killed", "killing", "murder", "blood", "gore", "zombie",
+           "zombies", "suicide", "drown", "drowned", "soldier", "soldiers",
+           "war")
+
+# Six test stories turned up "war" twice, both times as tug of war at a school
+# sports day. It is the one phrase allowed to carry a banned word.
+INNOCENT = ("tug of war", "tug-of-war")
+
 MORAL_SYSTEM = ("You check the endings of children's bedtime stories. "
                 "You reply with one JSON object and no other text.")
 
@@ -70,9 +89,16 @@ def harm_words(text: str):
     characters quiet is a disappointing story. A draft with a death in it is a
     different kind of failure, and the pipeline needs to be able to tell them
     apart before it decides what is safe to fall back on.
+
+    Matching is on whole words. Substring matching had been quietly throwing
+    away any story containing the word "studied", which has "died" sitting in
+    the middle of it, along with "mockingbird" and "deathly quiet".
     """
     low = text.lower()
-    return [w for w in HARM if w in low]
+    for phrase in INNOCENT:
+        low = low.replace(phrase, " ")
+    return [w for w in HARM + VIOLENT
+            if re.search(rf"\b{re.escape(w)}\b", low)]
 
 
 def check(text: str, brief: Brief):
