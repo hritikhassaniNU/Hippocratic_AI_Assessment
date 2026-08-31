@@ -1,0 +1,11 @@
+# Never commit the API key. OpenAI auto-revokes keys pushed to GitHub.
+.env
+.env.*
+
+.venv/
+venv/
+
+__pycache__/
+*.pyc
+
+scratch/
