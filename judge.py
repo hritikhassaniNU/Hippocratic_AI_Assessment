@@ -50,18 +50,17 @@ def compare_once(story_a: str, story_b: str):
 
 
 def better_of(champion: str, challenger: str):
-    """Compare both ways round; the challenger must win twice to take the title.
+    """Does the challenger beat the champion? Returns (bool, reason).
 
-    Asked one way only, the model picks whichever draft it saw first about two
-    thirds of the time. Asking twice and demanding agreement removes that, at
-    the cost of the comparison being undecided when the drafts are close --
-    which is fine, because then either would do.
+    Compared both ways round, and the challenger has to win both. Asked one
+    way only, the model picks whichever draft it saw first about two thirds of
+    the time. Demanding agreement removes that, at the cost of no result when
+    the drafts are close, which is fine because then either would do.
     """
     first, why = compare_once(champion, challenger)
     second, _ = compare_once(challenger, champion)
     challenger_wins = (first == "B" and second == "A")
-    return (challenger if challenger_wins else champion,
-            why if challenger_wins else "")
+    return challenger_wins, (why if challenger_wins else "")
 
 
 def pick_best(drafts, report):
@@ -72,8 +71,8 @@ def pick_best(drafts, report):
     """
     champion = drafts[0]
     for number, text in drafts[1:]:
-        winner, why = better_of(champion[1], text)
-        if winner is text:
+        challenger_wins, why = better_of(champion[1], text)
+        if challenger_wins:
             report(f"the judge prefers version {number}" + (f": {why}" if why else ""))
             champion = (number, text)
         else:
