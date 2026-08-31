@@ -16,9 +16,12 @@ export OPENAI_API_KEY=sk-...            # or put it in a .env file, which is git
 .venv/bin/python main.py
 .venv/bin/python main.py "a story about Alice and her best friend Bob, who is a cat"
 .venv/bin/python main.py "a story about space" --show-work
+.venv/bin/python main.py "a story about a dragon" --speak
 ```
 
 `--show-work` prints the drafts getting thrown away and the judge picking between what is left. It is the quickest way to see whether any of this is actually doing anything. `--once` skips the feedback prompt and exits after one story.
+
+`--speak` reads the winner out loud through the macOS `say` voice, at 150 words a minute instead of its default 175, which is a newsreader's pace rather than a bedtime one. A story printed to a terminal is the one format the intended listener cannot use, so this felt worth the twelve lines. It also changes what you notice, because a moral tacked onto the last line sounds much worse aloud than it looks on the page, which makes it the quickest way to hear the faults the checks are hunting for. The footer gives reading time next to the word count for the same reason, minutes being the honest unit for something meant to be heard. It shells out to a system binary rather than to a TTS API, so it adds no dependency and leaves `gpt-3.5-turbo` as the only model in the project. It is opt-in and off by default.
 
 The dependency is pinned to `openai==0.28.1`, because `openai.ChatCompletion.create` was removed in openai 1.0 and the skeleton uses it. Pinning meant I could leave the `call_model` you gave me essentially as it was, and the model is untouched.
 
@@ -99,6 +102,7 @@ The dependency is pinned to `openai==0.28.1`, because `openai.ChatCompletion.cre
              |
              v
         READ ALOUD
+   (--speak sends it to the system voice)
              |
              v
    "make it sillier" -> revise_story() [temp 0.6]
@@ -141,6 +145,8 @@ String matching beat the model twice on plain questions of fact, which is why th
 
 The model never gets told what they look for. The one time I did tell a revision prompt which words I was checking, it renamed them and left the problem sitting where it was, which is optimising against the check rather than against the fault.
 
+One check I measured and then did not ship: Flesch-Kincaid reading level, to catch the adult vocabulary the baseline kept reaching for. On three stories it looked like a clean win, with the pipeline sitting at 6.06 to 6.59 and the skeleton at 6.67 to 10.49. Widening the sample to eight killed it. Good stories ran from 5.57 all the way to 9.23, and skeleton stories came in as low as 7.03, so the two ranges sit on top of each other and there is no threshold that divides them. The pipeline's high scorers were all space and dinosaurs, where the longest words are "prehistoric" and "exploration", which is exactly the vocabulary a child who asked about dinosaurs already has. Flesch-Kincaid counts syllables, and a child's vocabulary is not syllable length, so it was really measuring the topic. Worth noting that at n=3 I would have shipped it.
+
 They do not get me all the way, though. My first version scanned the whole story for moralising phrases, and it threw out good drafts over an "and so," in the middle of a scene while still missing morals sitting in the final line. Now the scan looks at the last paragraph only, holds nothing but phrases that are almost never innocent, and hands anything subtler to one small model call asking a single yes or no question about that one paragraph. Narrow questions it can handle. Six-part rubrics it cannot.
 
 ### Safety
@@ -178,6 +184,8 @@ The ending check has partial recall. It got 4 out of 5 on the cases I validated 
 The judge confirms the first draft far more often than it changes anything. That is correct when the drafts genuinely tie, but it does mean its 4 calls frequently buy nothing at all.
 
 Drafts are written one after another. Doing them concurrently would cut most of the wait, and it is the first thing I would change.
+
+`--speak` is macOS only. It checks for the `say` binary first and prints a note rather than failing, so nothing breaks anywhere else, but on Linux or Windows the story stays on the page and that part of the idea only arrives through this document. Shelling out to a system voice is what keeps it free and dependency free; not being portable is the price of that.
 
 ## How I tested
 
