@@ -159,7 +159,11 @@ Asked to screen "a story about a war where soldiers fight and die", the model li
 
 The rewrite then has to pass the same list. Left to itself it turned "a war where soldiers fight and die" into "soldiers who bravely protect their kingdom from a sorcerer's army", which is still soldiers and still an army. The hook gets screened for the same reason. Asked to invent one for two kingdoms who stop arguing, it offered "on the brink of war".
 
-Nothing is refused outright. Zombies eating people becomes monsters having a picnic, and a grandmother who died becomes grandma's favourite recipe bringing everyone together. Telling a six-year-old at bedtime that you cannot help with that seemed like the wrong way to fail.
+An unsuitable request is redirected rather than refused. Zombies eating people becomes monsters having a picnic, and a grandmother who died becomes grandma's favourite recipe bringing everyone together. Telling a six-year-old at bedtime that you cannot help with that is the wrong way to fail when there is a good story to be had instead. A refusal only happens at the far end, if every draft written from the softened request still comes back with something upsetting in it, and that case is below.
+
+The story gets screened on the way out too, not just on the way in. The two vocabularies used to be separate, which left a hole: a request for a story about Bob the cat passes intake cleanly, and then "give Bob a gun and send him to war" arrives through the feedback loop and goes straight to the model without ever meeting the intake screen. The revision is now checked against the violent words as well, so it fails the checks, and the listener keeps the story they already had.
+
+That check is not simply the intake list reused. "army" has ants in it and "dead" has leaves, and six test stories turned up "war" twice, both times as tug of war at a school sports day. A false match costs more here than at intake, because five false rejections in a row now means no story at all, so the story-side list holds only the words that are never innocent, with tug of war carved out by name.
 
 ### Revision
 
