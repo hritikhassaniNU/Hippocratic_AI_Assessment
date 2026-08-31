@@ -5,13 +5,17 @@ opinion on what makes a story good (checks.py and judge.py do) or on how to
 write one (storyteller.py does).
 """
 
-from checks import check, ends_on_a_lesson
+from checks import check, ends_on_a_lesson, harm_words
 from intake import Brief, understand
 from judge import pick_best
 from storyteller import make_title, revise_story, write_story
 
 DRAFTS = 3          # candidates written per story
 MAX_ATTEMPTS = 5    # hard cap on generation calls, in case the checks keep failing
+
+
+class NoSafeStory(Exception):
+    """Every draft had upsetting content in it, so there is nothing to read."""
 
 
 class Result:
@@ -64,11 +68,16 @@ def tell_story(request: str, report=lambda _: None) -> Result:
             report(f"kept version {written}")
             kept.append((written, draft))
 
-    if not kept and rejected:
-        # Nothing came back clean. Read the one with the fewest complaints
-        # instead of writing yet another unchecked story, which is how the
-        # worst draft of a run once ended up being the one read aloud.
-        number, draft, reasons = min(rejected, key=lambda item: len(item[2]))
+    if not kept:
+        # Nothing came back clean, so fall back to the least bad draft rather
+        # than writing yet another unchecked one. But only the cosmetic
+        # failures are eligible. Running short or keeping the characters quiet
+        # makes for a dull story; a death in it is not something to read to a
+        # five year old because the alternative was silence.
+        harmless = [item for item in rejected if not harm_words(item[1])]
+        if not harmless:
+            raise NoSafeStory(request)
+        number, draft, reasons = min(harmless, key=lambda item: len(item[2]))
         report(f"no clean version, reading version {number} ({reasons[0]})")
         kept = [(number, draft)]
 
@@ -83,14 +92,28 @@ def apply_feedback(result: Result, feedback: str, report=lambda _: None) -> Resu
     Revision happens here and nowhere else. When the model invented its own
     criticism it produced word swaps that left the real problem untouched. An
     instruction from an actual person is specific enough to act on.
+
+    A revision has to clear the same bar a fresh draft does. If neither try
+    manages it the story the listener already has is returned unchanged, since
+    not getting the change you asked for beats being handed something that
+    failed the checks.
     """
+    def good_enough(story):
+        return not check(story, result.brief) and not ends_on_a_lesson(story)
+
     report("making that change...")
     revised = revise_story(result.story, feedback, result.brief)
+    written = 1
 
-    if check(revised, result.brief):
+    if not good_enough(revised):
         report("that introduced a problem, trying once more")
         second = revise_story(result.story, feedback, result.brief)
-        if not check(second, result.brief):
+        written += 1
+        if good_enough(second):
             revised = second
+        else:
+            report("could not make that change safely, keeping the story as it was")
+            revised = result.story
 
-    return Result(result.brief, revised, result.drafts_written + 1, result.drafts_kept)
+    return Result(result.brief, revised, result.drafts_written + written,
+                  result.drafts_kept)

@@ -63,16 +63,27 @@ def last_paragraph(text: str) -> str:
     return paragraphs[-1] if paragraphs else ""
 
 
+def harm_words(text: str):
+    """Just the upsetting content, separate from everything else check() finds.
+
+    Not all rejections are equal. A draft that ran short or kept its
+    characters quiet is a disappointing story. A draft with a death in it is a
+    different kind of failure, and the pipeline needs to be able to tell them
+    apart before it decides what is safe to fall back on.
+    """
+    low = text.lower()
+    return [w for w in HARM if w in low]
+
+
 def check(text: str, brief: Brief):
     """Return a list of reasons to reject this draft. Empty list means keep it."""
-    low = text.lower()
     ending = last_paragraph(text).lower()
     words = len(text.split())
     dialogue = len(re.findall(r'"[^"]{3,}"', text))
     target_low, target_high = WORDS.get(brief.length, WORDS["medium"])
 
     reasons = []
-    found_harm = [w for w in HARM if w in low]
+    found_harm = harm_words(text)
     found_moral = [p for p in MORALISING if p in ending]
     if found_harm:
         reasons.append(f"upsetting content: {', '.join(found_harm)}")
